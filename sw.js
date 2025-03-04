@@ -1,8 +1,8 @@
 var CACHE_NAME = 'tankyu';
 var urlsToCache = [
-    '/',
-    '/index.html',
-    '/share.html'
+    '/a/',
+    '/a/index.html',
+    '/a/share.html'
 ];
 
 // インストール処理
