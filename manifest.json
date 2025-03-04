@@ -1,9 +1,16 @@
 {
     "name": "探究ツール",
     "short_name": "探究ツール",
-    "start_url": "/",
+    "start_url": "index.html",
     "display": "standalone",
     "orientation": "any",
     "background_color": "#fff",
-    "theme_color": "#3563a7"
+    "theme_color": "#3563a7",
+    "icons": [
+        {
+          "src": "http://127.0.0.1:3000//icon.png",
+          "type": "image/png",
+          "sizes": "192x192"
+        }
+      ]
   }
