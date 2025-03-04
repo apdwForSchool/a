@@ -1,0 +1,9 @@
+{
+    "name": "探究ツール",
+    "short_name": "探究ツール",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#fff",
+    "theme_color": "#3563a7"
+  }

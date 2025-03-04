@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>探究結果共有ツール</title>
+</head>
+
+<body>
+    <h1>探究結果共有ツール</h1>
+
+    <div id="connection">未接続</div>
+    <div id="status">データ待機中</div>
+
+    <hr>
+
+    <button id="download">ルートダウンロード</button>
+    <button id="download2">データダウンロード</button>
+
+    <a href="#" id="sakujo">データベース削除</a>
+
+    <a>
+
+        <script>
+            var json;
+            function WS(reset) {
+                document.getElementById("connection").textContent = "情報取得中"
+                fetch("https://script.google.com/macros/s/AKfycbz6lLRZhqTRTz4forAVmZlIkMka4Fn-wNQeEhh74dVS0Ct0uxMA69J59g2TF0QuMx6McA/exec" + (reset ? "?reset=yes" : "")).then(function (res) { return res.json() }).then(function (json_tmp) {
+                    if (json_tmp) {
+                        document.getElementById("connection").textContent = ('最終受信：' + new Date().toLocaleTimeString())
+                        json = json_tmp
+                        var status_txt = "【受信済み】\n"
+                        Object.keys(json).forEach(function (key, index) {
+                            status_txt += `${index + 1}.「${key}」班  (${json[key].receive_time})\n`
+                        })
+                        document.getElementById("status").innerText = status_txt
+                    }
+                })
+            }
+
+            WS(false)
+
+
+            document.getElementById("download").addEventListener("click", function () {
+                var root = {
+                    "type": "FeatureCollection",
+                    "features": []
+                }
+                Object.keys(json).forEach(function (key, index) {
+                    json[key].location_history.properties.name = key + "班の調査"
+                    root.features.push(json[key].location_history)
+                })
+
+                const blob = new Blob([JSON.stringify(root)], { type: "application/geo+json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "Root_marged.geojson";
+                a.click();
+                URL.revokeObjectURL(url);
+            })
+
+
+            document.getElementById("download2").addEventListener("click", function () {
+                var result = {
+                    "type": "FeatureCollection",
+                    "features": []
+                }
+                Object.keys(json).forEach(function (key, index) {
+                    json[key].kanban.features.forEach(function (el) {
+                        el.properties.by = key + "班"
+                        result.features.push(el)
+                    })
+                })
+
+                const blob = new Blob([JSON.stringify(result)], { type: "application/geo+json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "Result_marged.geojson";
+                a.click();
+                URL.revokeObjectURL(url);
+            })
+
+            document.getElementById("sakujo").addEventListener("click", function () {
+                if (confirm('本当に削除しますか')) WS(true)
+            })
+        </script>
+</body>
+
+</html>
