@@ -1,5 +1,6 @@
 var CACHE_NAME = 'tankyu';
 var urlsToCache = [
+    '/',
     '/index.html',
     '/share.html'
 ];
