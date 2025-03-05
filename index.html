@@ -1181,6 +1181,7 @@
             font-size: 15px;
             border: solid 1px #666;
             margin-bottom: 6px;
+            background: #FFF;
         }
 
         input[type="text"]:focus,
@@ -1207,11 +1208,17 @@
             border: solid 1px #999;
             border-radius: 4px;
         }
+
+        #save_status {
+            font-weight: normal;
+            font-size: 14px;
+            float: right;
+        }
     </style>
 </head>
 
 <body>
-    <h3><button id="menu_show">≣</button>探究ツール</h3>
+    <h3><button id="menu_show">≣</button>探究ツール<span id="save_status"></span></h3>
 
     <div id="map"></div>
 
@@ -1281,7 +1288,8 @@
             <button id="share">結果の共有</button>
             <button id="share_r">共有状況を表示</button>
             <hr>
-            <button id="reset">データのリセット</button>
+            <button id="save_indexedDB">データを一時保存</button>
+            <button id="reset">一時保存データのリセット</button>
         </div>
     </dialog>
 
@@ -1294,17 +1302,21 @@
         var groupName;
 
         document.getElementById("reset").addEventListener("click", function () {
-            var deleteReq = indexedDB.deleteDatabase("record");
-            record = null;
+            if (confirm("一時保存されているデータを削除しますか？\nダウンロード・共有したデータは削除されません。")) {
+                var deleteReq = indexedDB.deleteDatabase("record");
+                record = null;
 
-            deleteReq.onsuccess = function (event) {
-                location.reload()
-            }
+                deleteReq.onsuccess = function (event) {
+                    location.reload()
+                }
 
-            deleteReq.onerror = function () {
-                alert("リセットに失敗")
+                deleteReq.onerror = function () {
+                    alert("リセットに失敗")
+                }
             }
         })
+
+        document.getElementById("save_indexedDB").addEventListener("click", saveData)
 
         document.getElementById("download_result").addEventListener("click", function () {
             const blob = new Blob([JSON.stringify(record.kanban)], { type: "application/geo+json" });
@@ -1332,6 +1344,7 @@
         })
 
         document.getElementById("share").addEventListener("click", function () {
+            saveData()
             groupName = prompt("班の名前を入力（なんでもOK）", groupName ? groupName : "")
             if (groupName) {
 
@@ -1354,34 +1367,11 @@
                     .catch(error => {
                         alert("共有に失敗しました。")
                     });
-
-                /*
-                                const socket = new WebSocket('wss://cloud.achex.ca/horikawa-taiwan-jishin-tankyu329053480934');
-                
-                                socket.addEventListener('open', function (event) {
-                                    console.log('open', event)
-                                    socket.send('{"auth":"' + groupName + '", "password":"Aufgreiu543897%$ew!s"}');
-                                    socket.send(JSON.stringify({ "to": "receiver", "msg": { kanban: record.kanban, location_history: turf.lineString(record.location_history) } }));
-                                    alert("共有しました。")
-                                });*/
             }
         })
 
-        //   条件により項目を隠す
-        //   歩いた軌跡
-        //   予定道表示
-        //   削除機能（編集いらん）
-        //   位置調整画面
-        //  localstorage
-        //   リセット機能
-        //   出力機能
         //リロード防止
-        //オフライン地図・切り替え(OSMエクスポート)?
-        //   OSM編集する
-        //   写真（ときどき）
-        //   achex共有
         //表表示？
-
 
         var record = {
             location_history: [],
@@ -1445,15 +1435,11 @@
                         id: 'offlineMap',
                         type: 'raster',
                         source: 'offlineMap',
-                        minzoom: 0,
-                        maxzoom: 22,
                     },
                     {
                         id: 'raster-tiles',
                         type: 'raster',
                         source: 'rtile',
-                        minzoom: 0,
-                        maxzoom: 22,
                     },
                     {
                         id: 'location-radius',
@@ -1558,7 +1544,6 @@
             });
 
             map.on("click", "kanban_points", function (e) {
-                console.log(e.features[0])
                 var p = e.features[0].properties;
 
                 var type_table = { "sode": "袖看板", "hekimen": "壁面看板", "oki": "置き看板", "kenshoku": "建植看板", "other": "その他の看板" }
@@ -1617,17 +1602,11 @@
                         id: 'offlineMap',
                         type: 'raster',
                         source: 'offlineMap',
-                        paint: { "raster-saturation": - 0.5, },
-                        minzoom: 0,
-                        maxzoom: 22,
                     },
                     {
                         id: 'raster-tiles',
                         type: 'raster',
                         source: 'rtile',
-                        paint: { "raster-saturation": - 0.5, },
-                        minzoom: 0,
-                        maxzoom: 22,
                     },
                 ],
             },
@@ -1668,7 +1647,6 @@
             el.classList.add("positionIcon")
             UserMarker = new maplibregl.Marker({ element: el })
                 .setLngLat([0, 0])
-                .addTo(map);
 
             drawLocation()
         })
@@ -1681,9 +1659,7 @@
                     currentLocation = { accuracy: "Low", coords: position.coords, date: new Date() }
                     drawLocation()
                 },
-                function (e) {
-                    console.log("error")
-                },
+                function (e) { },
                 {
                     maximumAge: 5000,//5秒間過去データ表示を認める（電池）
                     timeout: 1000,//高速要求
@@ -1721,15 +1697,9 @@
                         if (event.target.result) {
                             record = (event.target.result).data; // {id : 'A1', name : 'test'}
                             drawKanban()
-                        } else {
-                            console.log("データなし0")
                         }
                     }
-                    getReq.onerror = function (event) {
-                        console.log("データなし1")
-                    }
                 } catch (err) {
-                    return console.log("データなし4", err)
                 }
             }
         }
@@ -1748,13 +1718,12 @@
                 var store = trans.objectStore("record_table");
                 var putReq = store.put({ id: "record_01", data: record });
 
-                putReq.onsuccess = function () {
-                    console.log('put data success');
-                }
-
                 trans.oncomplete = function () {
-                    console.log('transaction complete');
+                    document.getElementById("save_status").textContent = "保存済：" + new Date().toLocaleTimeString()
                 }
+            }
+            openReq.onerror = function (event) {
+                document.getElementById("save_status").textContent = "保存失敗"
             }
         }
 
@@ -1771,7 +1740,11 @@
                 record.location_history.push(LngLat)
             }
 
-            if (UserMarker) UserMarker.setLngLat(LngLat)
+            if (UserMarker) {
+                if (!UserMarker._map) UserMarker.addTo(map);
+
+                UserMarker.setLngLat(LngLat)
+            }
 
             if (map.getSource('location-radius')) {
                 const radius = currentLocation.coords.accuracy; // kilometer
@@ -1788,8 +1761,6 @@
                 var line = turf.lineString(record.location_history);
                 map.getSource('location-history').setData(line)
             }
-
-            console.log(currentLocation)
         }
 
         function drawKanban() {
@@ -1797,13 +1768,15 @@
         }
 
         document.getElementById("moveToMyPosition").addEventListener("click", function () {
-            map.flyTo({
-                center: [currentLocation.coords.longitude, currentLocation.coords.latitude],
-                zoom: 16,
-                bearing: 0,
-                speed: 7,
-                curve: 1,
-            })
+            if (currentLocation.coords.longitude !== null && currentLocation.coords.latitude !== null) {
+                map.flyTo({
+                    center: [currentLocation.coords.longitude, currentLocation.coords.latitude],
+                    zoom: 16,
+                    bearing: 0,
+                    speed: 7,
+                    curve: 1,
+                })
+            }
         });
 
         document.getElementById("photo_b").addEventListener("click", function () {
@@ -1851,9 +1824,7 @@
                     });
                     map2_marker.setLngLat(_position)
                 },
-                function (e) {
-                    console.log("error", e)
-                },
+                function () { },
                 {
                     maximumAge: 0,//古い位置を認めない
                     timeout: 3000,//来ない場合しばらく待つ
@@ -1941,6 +1912,11 @@
         document.getElementById("menu_cancel").addEventListener("click", function () {
             document.getElementById("menu").close()
         })
+        document.querySelectorAll("#menu div button").forEach(function (el) {
+            el.addEventListener("click", function () {
+                document.getElementById("menu").close()
+            })
+        })
 
         document.querySelectorAll("input[name='kanban-type']").forEach(function (el) {
             el.addEventListener("change", function () {
@@ -1964,7 +1940,6 @@
         function resizeImg(imgData) {
             var width = 150
             var height = Math.round(imgData.height * (width / imgData.width))
-            console.log(imgData, width, height, imgData.height)
             const canvas = document.createElement('canvas');
             canvas.width = width;
             canvas.height = height;
@@ -1972,6 +1947,10 @@
             ctx.drawImage(imgData, 0, 0, width, height);
             return canvas.toDataURL('image/png')
         }
+
+        window.addEventListener("load", function () {
+            setInterval(saveData, 60000)
+        })
     </script>
 </body>
 
