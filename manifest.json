@@ -8,7 +8,7 @@
     "theme_color": "#3563a7",
     "icons": [
         {
-          "src": "http://127.0.0.1:3000//icon.png",
+          "src": "https://apdwforschool.github.io/a/icon.png",
           "type": "image/png",
           "sizes": "192x192"
         }
